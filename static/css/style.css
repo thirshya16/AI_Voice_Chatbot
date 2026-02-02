@@ -1,0 +1,146 @@
+body {
+  font-family: Arial, sans-serif;
+  background: #f0f2f5;
+  margin: 0;
+  padding: 0;
+}
+
+.login-container {
+  max-width: 400px;
+  margin: 80px auto;
+  background: #5dad7d;
+  padding: 30px;
+  border-radius: 15px;
+  box-shadow: 0px 4px 20px rgba(0,0,0,0.1);
+}
+
+.login-container h2 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.login-container input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 15px;
+  border-radius: 8px;
+  border: 1px solid #53bc8d;
+}
+
+.login-container button {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  background: #4CAF50;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.login-container button:hover {
+  background: #45a049;
+}
+
+.error {
+  color: red;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+/* Chat App */
+.chat-app {
+  max-width: 900px;
+  margin: 20px auto;
+  background: #fff;
+  border-radius: 15px;
+  display: flex;
+  flex-direction: column;
+  height: 80vh;
+  box-shadow: 0px 4px 20px rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #4CAF50;
+  color: white;
+  padding: 15px 20px;
+}
+
+.logout-btn {
+  background: #fff;
+  color: #4CAF50;
+  padding: 8px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.logout-btn:hover {
+  background: #e6e6e6;
+}
+
+.chat-container {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  background: #f9f9f9;
+}
+
+.message {
+  padding: 12px 18px;
+  border-radius: 20px;
+  margin-bottom: 15px;
+  max-width: 70%;
+  word-wrap: break-word;
+}
+
+.user-msg {
+  background: #DCF8C6;
+  align-self: flex-end;
+}
+
+.bot-msg {
+  background: #ECECEC;
+  align-self: flex-start;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 20px;
+  border-top: 1px solid #ccc;
+}
+
+.controls textarea {
+  width: 100%;
+  border-radius: 10px;
+  padding: 10px;
+  resize: none;
+}
+
+.buttons {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+}
+
+button, input[type="file"] {
+  padding: 10px 15px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+#camera-btn {
+  background: #4CAF50;
+  color: white;
+}
+
+#send-btn {
+  background: #2196F3;
+  color: white;
+}

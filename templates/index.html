@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CortexAI</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+body {font-family:'Roboto',sans-serif; margin:0; padding:0; background:#343434;}
+.container {max-width:2500px; margin: 40px;px auto; background:#343434; border-radius:15px; box-shadow:0 6px 20px rgba(0,0,0,0.1); padding:25px;}
+header {display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;}
+header h2 {margin:0; color:#e4e1e1; font-size:30px; font-weight:600; letter-spacing:1px;}
+.header-buttons {display:flex; gap:10px;}
+.header-buttons a, .header-buttons button {display:flex; align-items:center; gap:5px; padding:8px 14px; border-radius:8px; text-decoration:none; border:none; cursor:pointer; font-size:14px;}
+.header-buttons a.logout-btn {background:#031a33; color:#fff;}
+.header-buttons button.history-btn {background:#6c757d; color:#fff;}
+.header-buttons button.newchat-btn {background:#031a33; color:#fff;}
+.file-container {display:flex; align-items:center; gap:15px; margin-bottom:15px;}
+.file-container button {font-size:22px; cursor:pointer; color:#999b9d; background:none; border:none;}
+.file-container button:hover {color:#ebeff4;}
+#chatBox {height:450px; overflow-y:auto; border:1px solid #8e8f90; border-radius:12px; padding:15px; margin-bottom:15px; background:#2e2f31; display:flex; flex-direction:column; gap:12px;}
+.message {padding:12px 18px; border-radius:25px; max-width:75%; word-wrap:break-word; position:relative;}
+.user-msg {background:#2d2d2e; color:rgb(246, 244, 244); align-self:flex-end;}
+.bot-msg {background:#2d2d2e; color:rgb(254, 250, 250); align-self:flex-start;}
+.actions {display:flex; justify-content:flex-start; gap:12px; margin-top:6px;}
+.actions button {border:none; cursor:pointer; background:none; font-size:18px; color:#555;}
+.actions button:hover {color:#c31212;}
+.chat-input-container {display:flex; gap:10px; align-items:center;}
+.chat-input-container input[type="text"] {flex:1; padding:12px 20px; border-radius:25px; border:1px solid #393838; background:#2e2f31; color:#ffffff;}
+.chat-input-container button {padding:12px 18px; border-radius:25px; border:none; background:#2e2f31; color:white; cursor:pointer; font-size:16px;}
+#cameraStream {display:none; width:100%; border-radius:12px; margin-bottom:15px;}
+#captureBtn {display:none;}
+#canvas {display:none;}
+@media(max-width:600px){.container{margin:20px; padding:15px;} #chatBox{height:350px;} .header-buttons a, .header-buttons button{font-size:12px; padding:6px 10px;} .file-container button{font-size:20px;}}
+</style>
+</head>
+<body>
+
+<div class="container">
+<header>
+    <h2>CortexAI</h2>
+    <div class="header-buttons">
+        <button class="history-btn"><i class="fas fa-history"></i> History</button>
+        <button class="newchat-btn"><i class="fas fa-plus"></i> New Chat</button>
+        <a href="#" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </div>
+</header>
+
+<div class="file-container">
+    <button id="cameraBtn"><i class="fas fa-camera"></i></button>
+    <button id="uploadBtn"><i class="fas fa-upload"></i></button>
+    <input type="file" id="fileInput" style="display:none;">
+    <button id="voiceBtn"><i class="fas fa-microphone"></i></button>
+    <button id="captureBtn">Capture</button>
+    <canvas id="canvas"></canvas>
+</div>
+
+<video id="cameraStream" autoplay></video>
+<div id="chatBox"></div>
+
+<div class="chat-input-container">
+    <input type="text" id="userMessage" placeholder="Type a message..." />
+    <button id="sendBtn"><i class="fas fa-paper-plane"></i></button>
+</div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const chatBox = document.getElementById("chatBox");
+    const input = document.getElementById("userMessage");
+    const sendBtn = document.getElementById("sendBtn");
+    const fileInput = document.getElementById("fileInput");
+    const cameraBtn = document.getElementById("cameraBtn");
+    const cameraStream = document.getElementById("cameraStream");
+    const captureBtn = document.getElementById("captureBtn");
+    const canvas = document.getElementById("canvas");
+    const uploadBtn = document.getElementById("uploadBtn");
+    const voiceBtn = document.getElementById("voiceBtn");
+    const newChatBtn = document.querySelector(".newchat-btn");
+    const historyBtn = document.querySelector(".history-btn");
+
+    let chatHistory = JSON.parse(localStorage.getItem("chatHistory")) || [];
+
+    function addMessage(text, className, allowActions=true){
+        const msgDiv = document.createElement("div");
+        msgDiv.className = `message ${className}`;
+        msgDiv.innerText = text;
+        if(allowActions && className==="bot-msg"){
+            const actionsDiv = document.createElement("div");
+            actionsDiv.className = "actions";
+            const copyBtn = document.createElement("button");
+            copyBtn.innerHTML = '<i class="fas fa-copy"></i>'; copyBtn.title="Copy";
+            copyBtn.onclick = ()=>navigator.clipboard.writeText(text);
+            const editBtn = document.createElement("button");
+            editBtn.innerHTML = '<i class="fas fa-edit"></i>'; editBtn.title="Edit";
+            editBtn.onclick = ()=>input.value=text;
+            actionsDiv.appendChild(copyBtn); actionsDiv.appendChild(editBtn);
+            msgDiv.appendChild(actionsDiv);
+        }
+        chatBox.appendChild(msgDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        // Save to localStorage
+        chatHistory.push({text, type:className, allowActions});
+        localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
+    }
+
+    function sendMessage(){
+        const msg = input.value.trim();
+        if(!msg) return;
+        addMessage(msg,"user-msg");
+        input.value="";
+        fetch("/chat", {method:"POST", body: new URLSearchParams({message: msg})})
+        .then(res => res.json())
+        .then(data => addMessage(data.reply,"bot-msg"));
+    }
+
+    sendBtn.addEventListener("click", sendMessage);
+    input.addEventListener("keypress", e => { if(e.key==="Enter"){e.preventDefault(); sendMessage();}});
+
+    // Upload file
+    uploadBtn.addEventListener("click", ()=>fileInput.click());
+    fileInput.addEventListener("change", ()=>{
+        const file = fileInput.files[0];
+        if(!file) return;
+        const formData = new FormData();
+        formData.append("file", file);
+        fetch("/upload", {method:"POST", body: formData})
+        .then(res=>res.json())
+        .then(data=>{
+            if(data.status==="success"){
+                addMessage(`File uploaded: ${file.name}`,"user-msg",false);
+                fetch("/chat", {method:"POST", body: new URLSearchParams({message:`Please analyze this file: ${file.name}`})})
+                .then(res=>res.json())
+                .then(data=>addMessage(data.reply,"bot-msg"));
+            } else alert(data.message);
+        });
+    });
+
+    // Voice
+    voiceBtn.addEventListener("click", ()=>{
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if(!SpeechRecognition){ alert("Use Chrome for voice recognition."); return; }
+        const recognition = new SpeechRecognition();
+        recognition.lang = "en-US";
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+        recognition.onstart = ()=>addMessage("🎤 Listening...","bot-msg", false);
+        recognition.onresult = e=>{
+            input.value = e.results[0][0].transcript;
+            sendMessage();
+        };
+        recognition.onerror = e=>alert("Voice error: "+e.error);
+        recognition.start();
+    });
+
+    // Camera
+    cameraBtn.addEventListener("click", async ()=>{
+        try{
+            const stream = await navigator.mediaDevices.getUserMedia({video:true});
+            cameraStream.srcObject = stream;
+            cameraStream.style.display="block";
+            captureBtn.style.display="block";
+        } catch(err){alert("Cannot access camera: "+err);}
+    });
+
+    captureBtn.addEventListener("click", ()=>{
+        canvas.width = cameraStream.videoWidth;
+        canvas.height = cameraStream.videoHeight;
+        canvas.getContext("2d").drawImage(cameraStream,0,0);
+        canvas.toBlob(blob=>{
+            const formData = new FormData();
+            formData.append("file",blob,"camera.png");
+            fetch("/upload",{method:"POST", body: formData}).then(res=>res.json()).then(()=>addMessage("📷 Image captured and uploaded","user-msg",false));
+        });
+        cameraStream.srcObject.getTracks().forEach(t=>t.stop());
+        cameraStream.style.display="none";
+        captureBtn.style.display="none";
+    });
+
+    // New Chat
+    newChatBtn.addEventListener("click", ()=>{
+        chatBox.innerHTML = "";
+        chatHistory = [];
+        localStorage.removeItem("chatHistory");
+    });
+
+    // History
+    historyBtn.addEventListener("click", ()=>{
+        if(chatHistory.length===0) alert("No past chats available.");
+        else{
+            chatBox.innerHTML="";
+            chatHistory.forEach(msg=>addMessage(msg.text,msg.type,false));
+        }
+    });
+
+    // Load history on page load
+    if(chatHistory.length>0){
+        chatBox.innerHTML="";
+        chatHistory.forEach(msg=>addMessage(msg.text,msg.type,msg.allowActions));
+    }
+
+});
+// Logout functionality
+const logoutBtn = document.querySelector(".logout-btn");
+logoutBtn.addEventListener("click", (e) => {
+    e.preventDefault(); // Prevent default #
+    window.location.href = "/logout"; // Redirect to Flask logout route
+});
+
+</script>
+
+</body>
+</html>
